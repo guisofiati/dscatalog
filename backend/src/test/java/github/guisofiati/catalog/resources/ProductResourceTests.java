@@ -2,6 +2,7 @@ package github.guisofiati.catalog.resources;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import github.guisofiati.catalog.dto.ProductDTO;
 import github.guisofiati.catalog.services.ProductService;
+import github.guisofiati.catalog.services.exceptions.ResourceNotFoundException;
 import github.guisofiati.catalog.tests.Factory;
 
 @WebMvcTest(ProductResource.class)
@@ -32,14 +34,43 @@ public class ProductResourceTests {
 	
 	private ProductDTO productDTO;
 	private PageImpl<ProductDTO> page;
+	private long existingId;
+	private long nonExistingId;
 	
 	@BeforeEach
 	void setUp() throws Exception {
+		
+		existingId = 1L;
+		nonExistingId = 2L;
 		
 		productDTO = Factory.createProductDTO();
 		page = new PageImpl<>(List.of(productDTO));
 		
 		when(service.findAllPaged(ArgumentMatchers.any())).thenReturn(page);
+		
+		when(service.findById(existingId)).thenReturn(productDTO);
+		when(service.findById(nonExistingId)).thenThrow(ResourceNotFoundException.class);
+	}
+	
+	@Test
+	public void findByIdShouldReturnNotFoundWhenIdDoesNotExists() throws Exception {
+		
+		ResultActions result = mockMvc.perform(get("/products/{id}", nonExistingId)
+				.accept(MediaType.APPLICATION_JSON));
+		
+		result.andExpect(status().isNotFound());
+	}
+	
+	@Test
+	public void findByIdShouldReturnProductWhenIdExists() throws Exception {
+		
+		ResultActions result = mockMvc.perform(get("/products/{id}", existingId)
+				.accept(MediaType.APPLICATION_JSON));
+		
+		result.andExpect(status().isOk());
+		result.andExpect(jsonPath("$.id").exists());
+		result.andExpect(jsonPath("$.name").exists());
+		result.andExpect(jsonPath("$.description").exists());
 	}
 	
 	@Test

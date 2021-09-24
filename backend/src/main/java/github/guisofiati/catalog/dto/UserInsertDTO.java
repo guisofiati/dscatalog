@@ -1,5 +1,8 @@
 package github.guisofiati.catalog.dto;
 
+import github.guisofiati.catalog.services.validation.UserInsertValid;
+
+@UserInsertValid
 public class UserInsertDTO extends UserDTO{
 	private static final long serialVersionUID = 1L;
 	
